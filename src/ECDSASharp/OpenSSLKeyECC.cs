@@ -6,23 +6,63 @@ using ECDSASharp.Utility;
 
 namespace ECDSASharp
 {
+    //本类仅用于P-256密钥。
     internal static class OpenSSLKeyECC
     {
-
-        private const string ECCOID  = "1.2.840.10045.2.1";     //ECC
+        private const string ECCOID = "1.2.840.10045.2.1";
         private const string P256OID = "1.2.840.10045.3.1.7";   //ECDSA_P256 (= NIST P-256, P-256, prime256v1, secp256r1)
+        private const string P384OID = "1.3.132.0.34";          //没用，本类仅实现了P-256(prime256v1)
+        private const string P521OID = "1.3.132.0.35";          //没用，本类仅实现了P-256(prime256v1)
 
-        private const string P384OID = "1.3.132.0.34";
-        private const string P521OID = "1.3.132.0.35";
+        private readonly static byte[] bsPublicKey = new byte[]
+        {
+            0x30, 0x59, 0x30, 0x13, 0x06, 0x07, 0x2a, 0x86, 0x48, 0xce,
+            0x3d, 0x02, 0x01, 0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d,
+            0x03, 0x01, 0x07, 0x03, 0x42, 0x00, 0x04
+        };
+
+        private readonly static byte[] bsPrivateKey = new byte[]
+        {
+            0x30, 0x77, 0x02, 0x01, 0x01, 0x04, 0x20,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00,
+            0xa0, 0x0a, 0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03,
+            0x01, 0x07, 0xa1, 0x44, 0x03, 0x42, 0x00, 0x04
+        };
 
         internal static byte[] ConvertPublicBlob(byte[] publicKeyBlob)
         {
-            throw new NotImplementedException();
+
+            byte[] bs = new byte[bsPublicKey.Length + 64];
+            Buffer.BlockCopy(bsPublicKey, 0, bs, 0, bsPublicKey.Length);
+            Buffer.BlockCopy(publicKeyBlob, 8, bs, bsPublicKey.Length, 64);
+
+            StringBuilder sb = new StringBuilder("-----BEGIN PUBLIC KEY-----");
+            string strTemp = Convert.ToBase64String(bs, Base64FormattingOptions.InsertLineBreaks);
+            sb.AppendLine(strTemp);
+            sb.AppendLine("-----END PUBLIC KEY-----");
+
+            byte[] bs2 = Encoding.ASCII.GetBytes(sb.ToString());
+            return bs2;
         }
 
         internal static byte[] ConvertPrivateBlob(byte[] privateKeyBlob)
         {
-            throw new NotImplementedException();
+
+            byte[] bs = new byte[bsPrivateKey.Length + 64];
+            Buffer.BlockCopy(bsPrivateKey, 0, bs, 0, bsPrivateKey.Length);
+            Buffer.BlockCopy(privateKeyBlob, 8, bs, 7, 32);
+            Buffer.BlockCopy(privateKeyBlob, 72, bs, bsPrivateKey.Length-1, 64);
+
+            StringBuilder sb = new StringBuilder("-----BEGIN EC PRIVATE KEY-----");
+            string strTemp = Convert.ToBase64String(bs, Base64FormattingOptions.InsertLineBreaks);
+            sb.AppendLine(strTemp);
+            sb.AppendLine("-----END EC PRIVATE KEY-----");
+
+            byte[] bs2 = Encoding.ASCII.GetBytes(sb.ToString());
+            return bs2;
         }
 
         public static CngKey GetPrivateKey(string v)
