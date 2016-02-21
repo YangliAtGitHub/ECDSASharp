@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
@@ -32,6 +33,24 @@ namespace ECDSASharp
             0x01, 0x07, 0xa1, 0x44, 0x03, 0x42, 0x00, 0x04
         };
 
+        internal static byte[] ConvertPrivateBlob(byte[] privateKeyBlob)
+        {
+            byte[] bs = new byte[bsPrivateKey.Length + 64];
+            Buffer.BlockCopy(bsPrivateKey, 0, bs, 0, bsPrivateKey.Length);
+            Buffer.BlockCopy(privateKeyBlob, 72, bs, 7, 32);
+            Buffer.BlockCopy(privateKeyBlob, 8, bs, bsPrivateKey.Length, 64);
+
+            StringBuilder sb = new StringBuilder("-----BEGIN EC PRIVATE KEY-----");
+            sb.AppendLine();
+            string strTemp = ToBase64(bs);
+            sb.AppendLine(strTemp);
+            sb.AppendLine("-----END EC PRIVATE KEY-----");
+
+            string strTemp2 = sb.ToString();
+            byte[] bs2 = Encoding.ASCII.GetBytes(strTemp2);
+            return bs2;
+        }
+
         internal static byte[] ConvertPublicBlob(byte[] publicKeyBlob)
         {
 
@@ -40,32 +59,24 @@ namespace ECDSASharp
             Buffer.BlockCopy(publicKeyBlob, 8, bs, bsPublicKey.Length, 64);
 
             StringBuilder sb = new StringBuilder("-----BEGIN PUBLIC KEY-----");
-            string strTemp = Convert.ToBase64String(bs, Base64FormattingOptions.InsertLineBreaks);
+            sb.AppendLine();
+            string strTemp = ToBase64(bs);
             sb.AppendLine(strTemp);
             sb.AppendLine("-----END PUBLIC KEY-----");
 
-            byte[] bs2 = Encoding.ASCII.GetBytes(sb.ToString());
-            return bs2;
-        }
-
-        internal static byte[] ConvertPrivateBlob(byte[] privateKeyBlob)
-        {
-
-            byte[] bs = new byte[bsPrivateKey.Length + 64];
-            Buffer.BlockCopy(bsPrivateKey, 0, bs, 0, bsPrivateKey.Length);
-            Buffer.BlockCopy(privateKeyBlob, 8, bs, 7, 32);
-            Buffer.BlockCopy(privateKeyBlob, 72, bs, bsPrivateKey.Length-1, 64);
-
-            StringBuilder sb = new StringBuilder("-----BEGIN EC PRIVATE KEY-----");
-            string strTemp = Convert.ToBase64String(bs, Base64FormattingOptions.InsertLineBreaks);
-            sb.AppendLine(strTemp);
-            sb.AppendLine("-----END EC PRIVATE KEY-----");
-
-            byte[] bs2 = Encoding.ASCII.GetBytes(sb.ToString());
+            string strTemp2 = sb.ToString();
+            byte[] bs2 = Encoding.ASCII.GetBytes(strTemp2);
             return bs2;
         }
 
         public static CngKey GetPrivateKey(string v)
+        {
+            byte[] privateKeyBlob = GetPrivateKeyBytes(v);
+            CngKey privateKey = CngKey.Import(privateKeyBlob, CngKeyBlobFormat.EccPrivateBlob);
+            return privateKey;
+        }
+
+        public static byte[] GetPrivateKeyBytes(string v)
         {
             string str = File.ReadAllText(v, Encoding.ASCII);
             str = str.Replace("-----BEGIN EC PRIVATE KEY-----", "");
@@ -92,9 +103,7 @@ namespace ECDSASharp
             Buffer.BlockCopy(b2, 2, privateKeyBlob, 8, 64);
             Buffer.BlockCopy(b, 0, privateKeyBlob, 8 + 64, 32);
 
-            CngKey privateKey = CngKey.Import(privateKeyBlob, CngKeyBlobFormat.EccPrivateBlob);
-
-            return privateKey;
+            return privateKeyBlob;
         }
 
         public static CngKey GetPublicKey(string v)
@@ -102,7 +111,7 @@ namespace ECDSASharp
             string str = File.ReadAllText(v, Encoding.ASCII);
             str = str.Replace("-----BEGIN PUBLIC KEY-----", "");
             str = str.Replace("-----END PUBLIC KEY-----", "");
-            byte[] bs2 = System.Convert.FromBase64String(str);
+            byte[] bs2 = Convert.FromBase64String(str);
 
             ASN1Element asn = new ASN1Element(bs2, 0);
 
@@ -165,6 +174,21 @@ namespace ECDSASharp
             {
                 return null;
             }
+        }
+
+        //OpenSSL产生的Base64.每段长度不超过64byte。
+        private static string ToBase64(byte[] buffer)
+        {
+            int iTotalLength = buffer.Length;
+            List<string> ls = new List<string>();
+            for (int i = 0; i<= iTotalLength; i+=48)
+            {
+                int iLength = i + 48 > iTotalLength ? iTotalLength - i : 48;
+                string strTemp = Convert.ToBase64String(buffer, i, iLength);
+                ls.Add(strTemp);
+            }
+            string strResult = String.Join("\n", ls);
+            return strResult;
         }
 
     }

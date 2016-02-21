@@ -13,7 +13,10 @@ namespace ECDSASharp
             CngTest();
 
             //使用由OpenSSL生成的椭圆密钥进行数字签名和验签
-            OpenSSLKeyTest();
+            ReadOpenSSLKeyTest();
+
+            //读取OpenSSL产生的密钥，并保存成OpenSSL密钥
+            ReadKeyAndWriteKeyTest();
 
             //使用Windows CNG生成椭圆密钥，将其装换为OpenSSL密钥格式，再读取OpenSSL的椭圆密钥，然后用其签名和验签
             FullTest();
@@ -52,7 +55,7 @@ namespace ECDSASharp
 
         }
 
-        private static void OpenSSLKeyTest()
+        private static void ReadOpenSSLKeyTest()
         {
             //待签名数据
             byte[] data = Encoding.UTF8.GetBytes("Hello World.");
@@ -75,6 +78,22 @@ namespace ECDSASharp
                 Console.WriteLine("Verified");
             else
                 Console.WriteLine("Not verified");
+        }
+
+        private static void ReadKeyAndWriteKeyTest()
+        {
+            //读取OpenSSL产生的椭圆私钥，Import产生的CngKey私钥，不允许Export。所以这里直接获取byte[]
+            byte[] privateKeyBlob = OpenSSLKeyECC.GetPrivateKeyBytes(@"..\..\TestData\prime256v1.key");
+
+            //读取OpenSSL产生的椭圆私钥
+            CngKey pubKey = OpenSSLKeyECC.GetPublicKey(@"..\..\TestData\prime256v1.pub");
+            byte[] publicKeyBlob = pubKey.Export(CngKeyBlobFormat.EccPublicBlob);
+
+            //将密钥转换保存为OpenSSL ECC密钥格式
+            byte[] bytesPrivateKeyOpenSSL = OpenSSLKeyECC.ConvertPrivateBlob(privateKeyBlob);
+            byte[] bytesPublicKeyOpenSSL = OpenSSLKeyECC.ConvertPublicBlob(publicKeyBlob);
+            FileTools.WriteToFile(@"..\..\TestData\privateKey1.pem", bytesPrivateKeyOpenSSL);
+            FileTools.WriteToFile(@"..\..\TestData\publicKey1.pem", bytesPublicKeyOpenSSL);
         }
 
         private static void FullTest()
