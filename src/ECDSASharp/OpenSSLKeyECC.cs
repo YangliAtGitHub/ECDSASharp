@@ -3,13 +3,11 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using ECDSASharp.Utility;
-using log4net;
 
-namespace ECDSASharp.TestCase
+namespace ECDSASharp
 {
-    internal static class OpenSSLTester
+    internal static class OpenSSLKeyECC
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(OpenSSLTester));
 
         private const string ECCOID  = "1.2.840.10045.2.1";     //ECC
         private const string P256OID = "1.2.840.10045.3.1.7";   //ECDSA_P256 (= NIST P-256, P-256, prime256v1, secp256r1)
@@ -17,31 +15,17 @@ namespace ECDSASharp.TestCase
         private const string P384OID = "1.3.132.0.34";
         private const string P521OID = "1.3.132.0.35";
 
-        internal static void DoTest()
+        internal static byte[] ConvertPublicBlob(byte[] publicKeyBlob)
         {
-            //待签名数据
-            byte[] data = Encoding.UTF8.GetBytes("Hello World.");
-
-            CngKey privateKey = GetPrivateKey(@"..\..\TestData\prime256v1.key");
-            CngKey pubKey = GetPublicKey(@"..\..\TestData\prime256v1.pub");
-
-            //使用私钥签名
-            ECDsaCng dsa1 = new ECDsaCng(privateKey);
-            dsa1.HashAlgorithm = CngAlgorithm.Sha256;
-            byte[] signature = dsa1.SignData(data);
-
-            //使用公钥验签
-            ECDsaCng dsa2 = new ECDsaCng(pubKey);
-            dsa2.HashAlgorithm = CngAlgorithm.Sha256;
-            bool bVerified = dsa2.VerifyData(data, signature);
-
-            if (bVerified)
-                Console.WriteLine("Verified");
-            else
-                Console.WriteLine("Not verified");
+            throw new NotImplementedException();
         }
 
-        private static CngKey GetPrivateKey(string v)
+        internal static byte[] ConvertPrivateBlob(byte[] privateKeyBlob)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static CngKey GetPrivateKey(string v)
         {
             string str = File.ReadAllText(v, Encoding.ASCII);
             str = str.Replace("-----BEGIN EC PRIVATE KEY-----", "");
@@ -73,7 +57,7 @@ namespace ECDSASharp.TestCase
             return privateKey;
         }
 
-        private static CngKey GetPublicKey(string v)
+        public static CngKey GetPublicKey(string v)
         {
             string str = File.ReadAllText(v, Encoding.ASCII);
             str = str.Replace("-----BEGIN PUBLIC KEY-----", "");
