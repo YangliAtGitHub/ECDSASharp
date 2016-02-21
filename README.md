@@ -3,7 +3,7 @@
 
 #openssl 相关命令
 
-    * 产生椭圆私钥 *
+## 产生椭圆私钥
     # openssl ecparam -genkey -name prime256v1 -out k.pem
 
 ## 根据私钥产生公钥
